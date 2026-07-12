@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { cn, stageNames } from '@/lib/utils'
 
 type SortOption = 'date_added' | 'due_date' | 'title'
+type FileTypeFilter = 'all' | 'pdf' | 'ppt'
 
 interface SubjectOption {
   id: string
@@ -20,6 +21,7 @@ interface SubjectOption {
 interface DocumentRow {
   id: string
   title: string
+  file_type: 'pdf' | 'ppt' | 'pptx'
   current_stage: number
   next_review_date: string
   last_reviewed_at: string | null
@@ -51,6 +53,9 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
     () => searchParams.get('subject') ?? 'all'
   )
   const [stageFilter, setStageFilter] = useState(() => searchParams.get('stage') ?? 'all')
+  const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>(
+    () => (searchParams.get('type') as FileTypeFilter | null) ?? 'all'
+  )
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sort, setSort] = useState<SortOption>('due_date')
@@ -68,8 +73,10 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
   useEffect(() => {
     const subjectParam = searchParams.get('subject') ?? 'all'
     const stageParam = searchParams.get('stage') ?? 'all'
+    const typeParam = (searchParams.get('type') as FileTypeFilter | null) ?? 'all'
     setSubjectFilter((prev) => (prev !== subjectParam ? subjectParam : prev))
     setStageFilter((prev) => (prev !== stageParam ? stageParam : prev))
+    setFileTypeFilter((prev) => (prev !== typeParam ? typeParam : prev))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -118,7 +125,7 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
     let query = supabase
       .from('documents')
       .select(
-        'id, title, current_stage, next_review_date, last_reviewed_at, uploaded_at, subject_id, subjects(name, color)'
+        'id, title, file_type, current_stage, next_review_date, last_reviewed_at, uploaded_at, subject_id, subjects(name, color)'
       )
       .eq('user_id', user.id)
       .is('deleted_at', null)
@@ -129,6 +136,11 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
     }
     if (stageFilter !== 'all') {
       query = query.eq('current_stage', Number(stageFilter))
+    }
+    if (fileTypeFilter === 'pdf') {
+      query = query.eq('file_type', 'pdf')
+    } else if (fileTypeFilter === 'ppt') {
+      query = query.in('file_type', ['ppt', 'pptx'])
     }
     if (debouncedSearch) {
       query = query.ilike('title', `%${debouncedSearch}%`)
@@ -152,7 +164,7 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
     }
 
     setLoading(false)
-  }, [supabase, subjectFilter, stageFilter, debouncedSearch, sort])
+  }, [supabase, subjectFilter, stageFilter, fileTypeFilter, debouncedSearch, sort])
 
   useEffect(() => {
     fetchDocuments()
@@ -174,12 +186,16 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
   }
 
   const hasActiveFilters =
-    subjectFilter !== 'all' || stageFilter !== 'all' || debouncedSearch.length > 0
+    subjectFilter !== 'all' ||
+    stageFilter !== 'all' ||
+    fileTypeFilter !== 'all' ||
+    debouncedSearch.length > 0
 
   const cards: DocumentCardData[] = useMemo(
     () =>
       documents.map((doc) => ({
         title: doc.title,
+        fileType: doc.file_type,
         subject: {
           name: doc.subjects?.name ?? 'No subject',
           color: doc.subjects?.color ?? '#94a3b8',
@@ -221,6 +237,16 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
               {s.name}
             </option>
           ))}
+        </select>
+
+        <select
+          value={fileTypeFilter}
+          onChange={(e) => setFileTypeFilter(e.target.value as FileTypeFilter)}
+          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="all">All files</option>
+          <option value="pdf">PDFs</option>
+          <option value="ppt">PPTs</option>
         </select>
 
         <select
@@ -301,6 +327,7 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
                 onClick={() => {
                   setSubjectFilter('all')
                   setStageFilter('all')
+                  setFileTypeFilter('all')
                   setSearchInput('')
                 }}
               >

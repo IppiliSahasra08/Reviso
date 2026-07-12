@@ -1,14 +1,16 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { MoreVertical, Trash2, FileText } from 'lucide-react'
+import { MoreVertical, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
-import { cn, formatDate, stageNames } from '@/lib/utils'
+import { cn, fileTypeIcon, formatDate, stageNames } from '@/lib/utils'
+import type { DocumentFileType } from '@/types/database'
 
 const TOTAL_STAGES = stageNames.length - 1 // 6 review stages (index 0 is "new")
 
 export interface DocumentCardData {
   title: string
+  fileType: DocumentFileType
   subject: {
     name: string
     color: string
@@ -41,6 +43,7 @@ export function DocumentCard({ document, onOpen, onDelete }: DocumentCardProps) 
   const menuRef = useRef<HTMLDivElement>(null)
 
   const due = isDue(document.nextReviewDate)
+  const FileIcon = fileTypeIcon(document.fileType)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -87,7 +90,7 @@ export function DocumentCard({ document, onOpen, onDelete }: DocumentCardProps) 
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500">
-            <FileText className="h-4 w-4" aria-hidden="true" />
+            <FileIcon className="h-4 w-4" aria-hidden="true" />
           </span>
           <div className="min-w-0">
             <h3 className="truncate text-sm font-semibold text-slate-900" title={document.title}>
