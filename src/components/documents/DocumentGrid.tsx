@@ -174,8 +174,8 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
     // Optimistic removal — soft delete via deleted_at, recoverable server-side.
     setDocuments((prev) => prev.filter((doc) => doc.id !== id))
 
-    const { error: deleteError } = await supabase
-      .from('documents')
+    const { error: deleteError } = await (supabase
+      .from('documents') as any)
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 

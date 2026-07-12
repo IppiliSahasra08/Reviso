@@ -18,6 +18,17 @@ export interface UploadInput {
   file: File
   title: string
   subjectId: string | null
+  folderId?: string | null
+}
+
+/**
+ * Detects the document file type based on file name extension.
+ */
+export function detectFileType(file: File): 'pdf' | 'ppt' | 'pptx' {
+  const extension = file.name.split('.').pop()?.toLowerCase()
+  if (extension === 'ppt') return 'ppt'
+  if (extension === 'pptx') return 'pptx'
+  return 'pdf'
 }
 
 /**
@@ -119,7 +130,7 @@ export function useUpload() {
   }, [])
 
   const upload = useCallback(
-    async ({ file, title, subjectId }: UploadInput): Promise<string> => {
+    async ({ file, title, subjectId, folderId }: UploadInput): Promise<string> => {
       setError(null)
       setProgress(0)
 
@@ -163,10 +174,12 @@ export function useUpload() {
         setStatus('saving')
 
         const now = new Date().toISOString()
-        const insertPayload: DocumentInsert = {
+        const insertPayload: any = {
           user_id: user.id,
           subject_id: subjectId,
+          folder_id: folderId || null,
           title: title.trim() || file.name.replace(/\.pdf$/i, ''),
+          file_type: detectFileType(file),
           file_url: path,
           file_size: file.size,
           page_count: pageCount,
@@ -176,8 +189,8 @@ export function useUpload() {
           uploaded_at: now,
         }
 
-        const { data: inserted, error: insertError } = await supabase
-          .from('documents')
+        const { data: inserted, error: insertError } = await (supabase
+          .from('documents') as any)
           .insert(insertPayload)
           .select('id')
           .single()

@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { format, formatDistanceToNow, isValid } from 'date-fns'
+import { FileText, Presentation, File } from 'lucide-react'
 
 /**
  * Merge Tailwind CSS classes intelligently, resolving conflicts
@@ -70,3 +71,34 @@ export const stageNames = [
 ] as const
 
 export type StageName = (typeof stageNames)[number]
+
+/**
+ * Maps a file type extension to a corresponding Lucide React icon.
+ */
+export function fileTypeIcon(type: string | null | undefined) {
+  switch (type?.toLowerCase()) {
+    case 'pdf':
+      return FileText
+    case 'ppt':
+    case 'pptx':
+      return Presentation
+    default:
+      return File
+  }
+}
+
+/**
+ * Formats a file size in bytes into a human-readable string (e.g. "1.5 MB").
+ */
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes'
+  if (bytes < 0) return '0 Bytes'
+
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}

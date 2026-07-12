@@ -19,6 +19,7 @@ interface SubjectInfo {
 interface DocumentRow {
   id: string
   title: string
+  file_type: 'pdf' | 'ppt' | 'pptx'
   current_stage: number
   next_review_date: string
   last_reviewed_at: string | null
@@ -52,17 +53,17 @@ export default function FoldersPage() {
 
     if (subjectData) setSubject(subjectData)
 
-    const { data: folderData } = await supabase
-      .from('folders')
-      .select('id, name, parent_id, documents(count)')
+    const { data: folderData } = await (supabase
+      .from('folders') as any)
+      .select('id, title, parent_id, documents(count)')
       .eq('subject_id', subjectId)
-      .order('name', { ascending: true })
+      .order('title', { ascending: true })
 
     if (folderData) {
       setFolders(
-        folderData.map((f) => ({
+        folderData.map((f: any) => ({
           id: f.id,
-          name: f.name,
+          name: f.title,
           parent_id: f.parent_id,
           documentCount:
             (f.documents as unknown as { count: number }[])?.[0]?.count ?? 0,
@@ -84,7 +85,7 @@ export default function FoldersPage() {
     let query = supabase
       .from('documents')
       .select(
-        'id, title, current_stage, next_review_date, last_reviewed_at, uploaded_at, folder_id'
+        'id, title, file_type, current_stage, next_review_date, last_reviewed_at, uploaded_at, folder_id'
       )
       .eq('subject_id', subjectId)
       .is('deleted_at', null)
@@ -122,6 +123,7 @@ export default function FoldersPage() {
   const cards: (DocumentCardData & { id: string })[] = documents.map((doc) => ({
     id: doc.id,
     title: doc.title,
+    fileType: doc.file_type,
     subject: { name: subject?.name ?? '', color: subject?.color ?? '#94a3b8' },
     currentStage: doc.current_stage,
     nextReviewDate: doc.next_review_date,
@@ -131,8 +133,8 @@ export default function FoldersPage() {
 
   async function handleDeleteDocument(id: string) {
     setDocuments((prev) => prev.filter((d) => d.id !== id))
-    await supabase
-      .from('documents')
+    await (supabase
+      .from('documents') as any)
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
   }
@@ -140,8 +142,8 @@ export default function FoldersPage() {
   async function handleUploadComplete(documentId: string) {
     // Assign the freshly uploaded document to the currently selected folder, if any.
     if (selectedFolderId) {
-      await supabase
-        .from('documents')
+      await (supabase
+        .from('documents') as any)
         .update({ folder_id: selectedFolderId })
         .eq('id', documentId)
     }

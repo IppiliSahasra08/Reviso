@@ -14,7 +14,7 @@ export interface AuthUIProps {
    * switching internally, but you can control the starting point (e.g. a
    * dedicated /signup route). */
   initialMode?: AuthMode
-  /** Where to send the user after a successful sign-in. Defaults to /dashboard. */
+  /** Where to send the user after a successful sign-in. Defaults to /. */
   redirectTo?: string
   /** Href for the "Forgot password?" link. Defaults to /forgot-password. */
   forgotPasswordHref?: string
@@ -22,7 +22,7 @@ export interface AuthUIProps {
 
 export function AuthUI({
   initialMode = 'sign-in',
-  redirectTo = '/dashboard',
+  redirectTo = '/',
   forgotPasswordHref = '/forgot-password',
 }: AuthUIProps) {
   const router = useRouter()

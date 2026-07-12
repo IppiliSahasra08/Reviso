@@ -15,6 +15,8 @@ export interface UseReadingTimerResult {
   startSession: () => void
   /** Pauses timing and flushes the final duration to review_log. */
   endSession: () => void
+  /** Timestamp when reading session was started. */
+  startedAt: string | null
 }
 
 /**
@@ -64,8 +66,8 @@ export function useReadingTimer(documentId: string): UseReadingTimerResult {
       const startedAt = startedAtRef.current ?? new Date().toISOString()
       startedAtRef.current = startedAt
 
-      const { data, error: insertError } = await supabase
-        .from('review_log')
+      const { data, error: insertError } = await (supabase
+        .from('review_log') as any)
         .insert({
           user_id: user.id,
           document_id: documentId,
@@ -95,8 +97,8 @@ export function useReadingTimer(documentId: string): UseReadingTimerResult {
 
     void getOrCreateLogRow().then((rowId) => {
       if (!rowId) return
-      void supabase
-        .from('review_log')
+      void (supabase
+        .from('review_log') as any)
         .update({ ended_at: new Date().toISOString(), duration_seconds: totalSeconds })
         .eq('id', rowId)
     })
@@ -156,5 +158,5 @@ export function useReadingTimer(documentId: string): UseReadingTimerResult {
     return () => clearInterval(interval)
   }, [isActive, currentTotalSeconds])
 
-  return { elapsedSeconds, isActive, startSession, endSession }
+  return { elapsedSeconds, isActive, startSession, endSession, startedAt: startedAtRef.current }
 }

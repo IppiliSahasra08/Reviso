@@ -24,7 +24,7 @@ export interface CreateFolderModalProps {
   subjectId?: string
   /** Pre-select a parent folder, e.g. when "New subfolder" is clicked from within a folder. */
   initialParentId?: string | null
-  onCreated?: (folder: FolderNode) => void
+  onCreated?: (folder: { id: string; title: string; parent_id: string | null }) => void | Promise<void>
 }
 
 export function CreateFolderModal({
@@ -92,14 +92,21 @@ export function CreateFolderModal({
     let cancelled = false
 
     async function loadFolders() {
-      const { data } = await supabase
-        .from('folders')
-        .select('id, name, parent_id')
+      const { data } = await (supabase
+        .from('folders') as any)
+        .select('id, title, parent_id')
         .eq('subject_id', effectiveSubjectId)
-        .order('name', { ascending: true })
+        .order('title', { ascending: true })
 
       if (!cancelled && data) {
-        setParentOptions(data.map((f) => ({ ...f, documentCount: 0 })))
+        setParentOptions(
+          data.map((f: any) => ({
+            id: f.id,
+            name: f.title,
+            parent_id: f.parent_id,
+            documentCount: 0,
+          }))
+        )
       }
     }
 
@@ -134,15 +141,15 @@ export function CreateFolderModal({
       return
     }
 
-    const { data, error: insertError } = await supabase
-      .from('folders')
+    const { data, error: insertError } = await (supabase
+      .from('folders') as any)
       .insert({
         user_id: user.id,
         subject_id: effectiveSubjectId,
         parent_id: parentId || null,
-        name: trimmedName,
+        title: trimmedName,
       })
-      .select('id, name, parent_id')
+      .select('id, title, parent_id')
       .single()
 
     setSaving(false)
@@ -152,7 +159,7 @@ export function CreateFolderModal({
       return
     }
 
-    onCreated?.({ ...data, documentCount: 0 })
+    onCreated?.({ id: data.id, title: data.title, parent_id: data.parent_id })
     onClose()
   }
 

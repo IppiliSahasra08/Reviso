@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { FolderTree } from '@/components/folders/FolderTree'
 import { CreateFolderModal } from '@/components/folders/CreateFolderModal'
 import { FolderBreadcrumb } from '@/components/folders/FolderBreadcrumb'
-import { FolderFileGrid } from '@/components/folders/FolderFileGrid'
+import { FolderFileGrid } from '@/components/documents/FolderFileGrid'
 import { UploadModal } from '@/components/documents/UploadModal'
 import { buildFolderTree, findFolderNode, getBreadcrumbTrail } from '@/lib/folders'
 import type { Folder, Subject } from '@/types/database'
@@ -43,16 +43,16 @@ export default function SubjectFoldersPage() {
     }
 
     const [subjectRes, foldersRes, docsRes] = await Promise.all([
-      supabase.from('subjects').select('*').eq('id', subjectId).eq('user_id', user.id).single(),
-      supabase
-        .from('folders')
+      (supabase.from('subjects') as any).select('*').eq('id', subjectId).eq('user_id', user.id).single(),
+      (supabase
+        .from('folders') as any)
         .select('*')
         .eq('subject_id', subjectId)
         .eq('user_id', user.id),
       // Own (non-recursive) counts are derived client-side from folder_id
       // on each document — cheap for typical library sizes, no RPC needed.
-      supabase
-        .from('documents')
+      (supabase
+        .from('documents') as any)
         .select('folder_id')
         .eq('subject_id', subjectId)
         .eq('user_id', user.id)
@@ -133,7 +133,7 @@ export default function SubjectFoldersPage() {
             </div>
             <FolderBreadcrumb
               segments={breadcrumbSegments}
-              onNavigate={(id) => setSelectedFolderId(id)}
+              onNavigate={(id: string | null) => setSelectedFolderId(id)}
             />
           </div>
 
@@ -178,12 +178,12 @@ export default function SubjectFoldersPage() {
                 All files in {subject?.name ?? 'subject'}
               </button>
               <FolderTree
-                tree={tree}
+                folders={tree}
                 selectedId={selectedFolderId}
                 onSelect={setSelectedFolderId}
                 defaultExpandedIds={breadcrumbSegments
-                  .filter((s) => s.id)
-                  .map((s) => s.id as string)}
+                  .filter((s: { id: string | null }) => s.id)
+                  .map((s: { id: string | null }) => s.id as string)}
               />
             </>
           )}
@@ -193,7 +193,7 @@ export default function SubjectFoldersPage() {
           <FolderFileGrid
             subjectId={subjectId}
             folderId={selectedFolderId}
-            activeFolderTitle={activeNode?.title ?? subject?.name ?? 'This folder'}
+            activeFolderTitle={activeNode?.name ?? subject?.name ?? 'This folder'}
             onUploadClick={() => setIsUploadModalOpen(true)}
           />
         </main>
@@ -203,7 +203,6 @@ export default function SubjectFoldersPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         subjectId={subjectId}
-        tree={tree}
         initialParentId={selectedFolderId}
         onCreated={handleFolderCreated}
       />

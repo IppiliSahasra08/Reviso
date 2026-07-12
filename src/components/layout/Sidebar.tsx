@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import { UserMenu } from '@/components/auth/UserMenu'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Library', href: '/library', icon: Library },
   { name: 'Subjects', href: '/subjects', icon: BookOpen },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
@@ -55,7 +55,7 @@ export function Sidebar({ isOpen, onClose, user }: SidebarProps) {
       >
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center justify-between px-5">
-          <Link href="/dashboard" className="flex items-center gap-2" onClick={onClose}>
+          <Link href="/" className="flex items-center gap-2" onClick={onClose}>
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
               <BrainCircuit className="h-5 w-5" aria-hidden="true" />
             </span>

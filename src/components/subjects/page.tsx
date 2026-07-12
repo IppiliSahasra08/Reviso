@@ -6,10 +6,11 @@ import { Plus, Check, X, Trash2, AlertTriangle, Folder, FileText } from 'lucide-
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { SubjectModal, PRESET_COLORS, type SubjectRecord } from '@/components/subjects/SubjectModal'
+import { SubjectModal, PRESET_COLORS } from '@/components/subjects/SubjectModal'
 import { cn } from '@/lib/utils'
+import type { Subject } from '@/types/database'
 
-interface SubjectCardData extends SubjectRecord {
+interface SubjectCardData extends Subject {
   folderCount: number
   documentCount: number
 }
@@ -45,16 +46,14 @@ export default function SubjectsPage() {
 
     const { data, error } = await supabase
       .from('subjects')
-      .select('id, name, color, folders(count), documents(count)')
+      .select('*, folders(count), documents(count)')
       .eq('user_id', user.id)
       .order('name', { ascending: true })
 
     if (!error && data) {
       setSubjects(
-        data.map((row) => ({
-          id: row.id,
-          name: row.name,
-          color: row.color,
+        data.map((row: any) => ({
+          ...row,
           folderCount: (row.folders as unknown as { count: number }[])?.[0]?.count ?? 0,
           documentCount: (row.documents as unknown as { count: number }[])?.[0]?.count ?? 0,
         }))
@@ -93,8 +92,8 @@ export default function SubjectsPage() {
 
     setSubjects((prev) => prev.map((s) => (s.id === subject.id ? { ...s, name: trimmed } : s)))
 
-    const { error } = await supabase
-      .from('subjects')
+    const { error } = await (supabase
+      .from('subjects') as any)
       .update({ name: trimmed, updated_at: new Date().toISOString() })
       .eq('id', subject.id)
 
@@ -107,8 +106,8 @@ export default function SubjectsPage() {
     setColorPickerId(null)
     setSubjects((prev) => prev.map((s) => (s.id === subject.id ? { ...s, color } : s)))
 
-    const { error } = await supabase
-      .from('subjects')
+    const { error } = await (supabase
+      .from('subjects') as any)
       .update({ color, updated_at: new Date().toISOString() })
       .eq('id', subject.id)
 
@@ -121,12 +120,31 @@ export default function SubjectsPage() {
     if (!deleteTarget) return
     setDeleting(true)
 
-    const { error } = await supabase.from('subjects').delete().eq('id', deleteTarget.id)
+    const { error } = await (supabase.from('subjects') as any).delete().eq('id', deleteTarget.id)
 
     setDeleting(false)
     if (!error) {
       setSubjects((prev) => prev.filter((s) => s.id !== deleteTarget.id))
       setDeleteTarget(null)
+    }
+  }
+
+  async function handleCreateSubject(data: { name: string; color: string }) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { error } = await (supabase.from('subjects') as any).insert({
+      user_id: user.id,
+      name: data.name,
+      color: data.color,
+    })
+
+    if (!error) {
+      fetchSubjects()
+    } else {
+      throw new Error(error.message)
     }
   }
 
@@ -197,14 +215,14 @@ export default function SubjectsPage() {
                         <div className="flex flex-wrap gap-1.5">
                           {PRESET_COLORS.map((preset) => (
                             <button
-                              key={preset}
+                              key={preset.value}
                               type="button"
-                              onClick={() => changeColor(subject, preset)}
-                              aria-label={`Use color ${preset}`}
+                              onClick={() => changeColor(subject, preset.value)}
+                              aria-label={`Use color ${preset.name}`}
                               className="flex h-6 w-6 items-center justify-center rounded-full hover:scale-110"
-                              style={{ backgroundColor: preset }}
+                              style={{ backgroundColor: preset.value }}
                             >
-                              {subject.color.toLowerCase() === preset.toLowerCase() && (
+                              {subject.color.toLowerCase() === preset.value.toLowerCase() && (
                                 <Check className="h-3.5 w-3.5 text-white" aria-hidden="true" />
                               )}
                             </button>
@@ -304,8 +322,7 @@ export default function SubjectsPage() {
       <SubjectModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        subject={null}
-        onSaved={() => fetchSubjects()}
+        onSave={handleCreateSubject}
       />
 
       {/* Delete confirmation */}

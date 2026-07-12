@@ -52,8 +52,8 @@ export default function DocumentPage() {
       return
     }
 
-    const { data, error } = await supabase
-      .from('documents')
+    const { data, error } = await (supabase
+      .from('documents') as any)
       .select('*, subjects(id, name, color)')
       .eq('id', params.id)
       .eq('user_id', user.id)
@@ -99,9 +99,9 @@ export default function DocumentPage() {
     if (!doc) return
     setMarking(true)
 
-    const { error } = await supabase.rpc('mark_document_reviewed', {
+    const { error } = await (supabase as any).rpc('mark_document_reviewed', {
       p_document_id: doc.id,
-      p_started_at: timer.startedAt,
+      p_started_at: timer.startedAt ?? new Date().toISOString(),
       p_duration_seconds: timer.elapsedSeconds,
       p_pages_read: currentPage,
     })

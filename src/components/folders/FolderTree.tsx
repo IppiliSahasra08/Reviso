@@ -7,10 +7,11 @@ export interface FolderTreeProps {
   folders: FolderNode[]
   onSelect: (id: string | null) => void
   selectedId: string | null
+  defaultExpandedIds?: string[]
 }
 
-export function FolderTree({ folders, onSelect, selectedId }: FolderTreeProps) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+export function FolderTree({ folders, onSelect, selectedId, defaultExpandedIds = [] }: FolderTreeProps) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set(defaultExpandedIds))
 
   function toggleExpand(id: string) {
     setExpandedIds((prev) => {
