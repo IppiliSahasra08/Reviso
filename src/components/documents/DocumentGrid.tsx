@@ -56,6 +56,9 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>(
     () => (searchParams.get('type') as FileTypeFilter | null) ?? 'all'
   )
+  const [dueOnlyFilter, setDueOnlyFilter] = useState(
+    () => searchParams.get('filter') === 'due'
+  )
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sort, setSort] = useState<SortOption>('due_date')
@@ -74,9 +77,11 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
     const subjectParam = searchParams.get('subject') ?? 'all'
     const stageParam = searchParams.get('stage') ?? 'all'
     const typeParam = (searchParams.get('type') as FileTypeFilter | null) ?? 'all'
+    const isDueParam = searchParams.get('filter') === 'due'
     setSubjectFilter((prev) => (prev !== subjectParam ? subjectParam : prev))
     setStageFilter((prev) => (prev !== stageParam ? stageParam : prev))
     setFileTypeFilter((prev) => (prev !== typeParam ? typeParam : prev))
+    setDueOnlyFilter(isDueParam)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -131,6 +136,10 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
       .is('deleted_at', null)
       .limit(PAGE_SIZE)
 
+    if (dueOnlyFilter) {
+      query = (query as any).lte('next_review_date', new Date().toISOString())
+    }
+
     if (subjectFilter !== 'all') {
       query = query.eq('subject_id', subjectFilter)
     }
@@ -164,7 +173,7 @@ export function DocumentGrid({ onUploadClick }: DocumentGridProps) {
     }
 
     setLoading(false)
-  }, [supabase, subjectFilter, stageFilter, fileTypeFilter, debouncedSearch, sort])
+  }, [supabase, subjectFilter, stageFilter, fileTypeFilter, debouncedSearch, sort, dueOnlyFilter])
 
   useEffect(() => {
     fetchDocuments()

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, X, SlidersHorizontal } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DocumentGrid } from '@/components/documents/DocumentGrid'
+import { UploadModal } from '@/components/documents/UploadModal'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
@@ -105,6 +106,8 @@ function FilterSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 export default function LibraryPage() {
   const router = useRouter()
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
@@ -121,7 +124,7 @@ export default function LibraryPage() {
             <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
             Filters
           </Button>
-          <Button variant="primary" onClick={() => router.push('/library/upload')}>
+          <Button variant="primary" onClick={() => setIsUploadOpen(true)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
             Upload
           </Button>
@@ -166,10 +169,19 @@ export default function LibraryPage() {
         {/* Document grid */}
         <div className="min-w-0 flex-1">
           <Suspense fallback={null}>
-            <DocumentGrid onUploadClick={() => router.push('/library/upload')} />
+            <DocumentGrid key={refreshKey} onUploadClick={() => setIsUploadOpen(true)} />
           </Suspense>
         </div>
       </div>
+
+      <UploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        onUploadComplete={() => {
+          setIsUploadOpen(false)
+          setRefreshKey((prev) => prev + 1)
+        }}
+      />
     </div>
   )
 }

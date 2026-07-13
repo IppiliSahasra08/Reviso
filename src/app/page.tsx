@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Flame,
@@ -14,109 +15,152 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useSession } from '@/components/providers/SessionProvider'
+import { createClient } from '@/lib/supabase/client'
 import { cn, formatDate, formatDuration, stageNames } from '@/lib/utils'
 
-// ---------------------------------------------------------------------------
-// Mock data — replace with Supabase queries once the documents/subjects
-// tables are wired up (see src/types/database.ts).
-// ---------------------------------------------------------------------------
+function calculateStreak(logs: { started_at: string }[]): number {
+  if (!logs || logs.length === 0) return 0
+  const dates = Array.from(
+    new Set(
+      logs.map((log) => new Date(log.started_at).toDateString())
+    )
+  ).map((d) => new Date(d))
 
-const mockStats = {
-  dueToday: 4,
-  totalDocuments: 27,
-  streakDays: 6,
+  dates.sort((a, b) => b.getTime() - a.getTime())
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  const current = dates[0]
+  if (current.getTime() < yesterday.getTime()) {
+    return 0
+  }
+
+  let streak = 1
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1])
+    prev.setDate(prev.getDate() - 1)
+    const curr = dates[i]
+    if (curr.getTime() === prev.getTime()) {
+      streak++
+    } else if (curr.getTime() > prev.getTime()) {
+      continue
+    } else {
+      break
+    }
+  }
+  return streak
 }
-
-const mockSubjectBreakdown = [
-  { name: 'Machine Learning', count: 9, color: '#4f46e5' },
-  { name: 'Quantum Computing', count: 6, color: '#7c3aed' },
-  { name: 'Systems Design', count: 7, color: '#0d9488' },
-  { name: 'Data Structures', count: 5, color: '#d97706' },
-]
-
-const mockDueToday = [
-  {
-    id: 'doc_1',
-    title: 'Attention Is All You Need',
-    subject: 'Machine Learning',
-    subjectColor: '#4f46e5',
-    stage: 3,
-    pageCount: 15,
-  },
-  {
-    id: 'doc_2',
-    title: 'QAOA for Combinatorial Optimization',
-    subject: 'Quantum Computing',
-    subjectColor: '#7c3aed',
-    stage: 2,
-    pageCount: 22,
-  },
-  {
-    id: 'doc_3',
-    title: 'Designing Data-Intensive Applications — Ch. 5',
-    subject: 'Systems Design',
-    subjectColor: '#0d9488',
-    stage: 4,
-    pageCount: 34,
-  },
-  {
-    id: 'doc_4',
-    title: 'Red-Black Trees: A Refresher',
-    subject: 'Data Structures',
-    subjectColor: '#d97706',
-    stage: 1,
-    pageCount: 11,
-  },
-]
-
-const mockRecentActivity = [
-  {
-    id: 'doc_5',
-    title: 'RAGAS: Automated Evaluation of RAG',
-    subject: 'Machine Learning',
-    reviewedAt: '2026-07-11T14:20:00Z',
-    durationSeconds: 1380,
-  },
-  {
-    id: 'doc_6',
-    title: 'NISQ-Era Algorithms Survey',
-    subject: 'Quantum Computing',
-    reviewedAt: '2026-07-11T09:05:00Z',
-    durationSeconds: 2760,
-  },
-  {
-    id: 'doc_2',
-    title: 'QAOA for Combinatorial Optimization',
-    subject: 'Quantum Computing',
-    reviewedAt: '2026-07-10T19:40:00Z',
-    durationSeconds: 900,
-  },
-  {
-    id: 'doc_7',
-    title: 'Consistent Hashing in Practice',
-    subject: 'Systems Design',
-    reviewedAt: '2026-07-10T11:15:00Z',
-    durationSeconds: 660,
-  },
-  {
-    id: 'doc_8',
-    title: 'B+ Trees vs LSM Trees',
-    subject: 'Data Structures',
-    reviewedAt: '2026-07-09T16:50:00Z',
-    durationSeconds: 1140,
-  },
-]
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user } = useSession()
+  const { user, loading: sessionLoading } = useSession()
+
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ dueToday: 0, totalDocuments: 0, streakDays: 0 })
+  const [subjectBreakdown, setSubjectBreakdown] = useState<{ name: string; count: number; color: string }[]>([])
+  const [dueTodayList, setDueTodayList] = useState<any[]>([])
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
+
+  useEffect(() => {
+    if (sessionLoading || !user) return
+    const userId = user.id
+    let cancelled = false
+
+    async function loadDashboardData() {
+      const supabase = createClient()
+
+      // 1. Fetch all documents for stats & breakdown
+      const { data: allDocs } = await (supabase
+        .from('documents') as any)
+        .select('id, title, next_review_date, current_stage, page_count, subject_id, subjects(id, name, color)')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+
+      // 2. Fetch all review logs for streak & recent activity
+      const { data: allLogs } = await (supabase
+        .from('review_log') as any)
+        .select('id, started_at, duration_seconds, documents(id, title, subjects(name))')
+        .eq('user_id', userId)
+        .order('started_at', { ascending: false })
+
+      if (cancelled) return
+
+      // Calculate stats
+      const totalDocuments = allDocs ? allDocs.length : 0
+      const nowIso = new Date().toISOString()
+      const dueDocs = (allDocs ?? []).filter(
+        (d: any) => d.next_review_date && d.next_review_date <= nowIso
+      )
+      const dueToday = dueDocs.length
+      const streakDays = calculateStreak(allLogs ?? [])
+
+      setStats({ dueToday, totalDocuments, streakDays })
+
+      // Calculate subject breakdown
+      const breakdownMap: Record<string, { count: number; color: string }> = {}
+      for (const doc of allDocs ?? []) {
+        const sub = doc.subjects
+        const name = sub?.name ?? 'No Subject'
+        const color = sub?.color ?? '#64748b'
+        if (!breakdownMap[name]) {
+          breakdownMap[name] = { count: 0, color }
+        }
+        breakdownMap[name].count++
+      }
+      const breakdown = Object.entries(breakdownMap).map(([name, val]) => ({
+        name,
+        count: val.count,
+        color: val.color,
+      }))
+      setSubjectBreakdown(breakdown)
+
+      // Map due list
+      const dueList = dueDocs.map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        subject: d.subjects?.name ?? 'No Subject',
+        subjectColor: d.subjects?.color ?? '#555555',
+        stage: d.current_stage ?? 0,
+        pageCount: d.page_count ?? 0,
+      }))
+      setDueTodayList(dueList)
+
+      // Map recent activity
+      const recent = (allLogs ?? []).map((log: any) => ({
+        id: log.id,
+        title: log.documents?.title ?? 'Deleted Document',
+        subject: log.documents?.subjects?.name ?? 'No Subject',
+        reviewedAt: log.started_at,
+        durationSeconds: log.duration_seconds ?? 0,
+      }))
+      setRecentActivity(recent)
+
+      setLoading(false)
+    }
+
+    loadDashboardData()
+    return () => {
+      cancelled = true
+    }
+  }, [user, sessionLoading])
+
+  if (sessionLoading || loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+      </div>
+    )
+  }
 
   const firstName =
     (user?.user_metadata?.full_name as string | undefined)?.split(' ')[0] ??
     user?.email?.split('@')[0] ??
     'there'
 
-  const maxSubjectCount = Math.max(...mockSubjectBreakdown.map((s) => s.count))
+  const maxSubjectCount = subjectBreakdown.length > 0 ? Math.max(...subjectBreakdown.map((s) => s.count)) : 0
 
   return (
     <div className="flex flex-col gap-8 p-4 sm:p-6">
@@ -126,8 +170,8 @@ export default function DashboardPage() {
           Welcome back, {firstName} 👋
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          {mockStats.dueToday > 0
-            ? `You have ${mockStats.dueToday} document${mockStats.dueToday === 1 ? '' : 's'} due for review today.`
+          {stats.dueToday > 0
+            ? `You have ${stats.dueToday} document${stats.dueToday === 1 ? '' : 's'} due for review today.`
             : "You're all caught up — nothing due today."}
         </p>
       </div>
@@ -144,7 +188,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <span className="text-3xl font-semibold text-slate-900">
-              {mockStats.dueToday}
+              {stats.dueToday}
             </span>
             <button
               type="button"
@@ -167,7 +211,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <span className="text-3xl font-semibold text-slate-900">
-              {mockStats.totalDocuments}
+              {stats.totalDocuments}
             </span>
             <button
               type="button"
@@ -185,25 +229,29 @@ export default function DashboardPage() {
           <CardContent className="flex flex-col gap-3">
             <span className="text-sm font-medium text-slate-500">By subject</span>
             <div className="flex flex-col gap-2">
-              {mockSubjectBreakdown.map((subject) => (
-                <div key={subject.name} className="flex items-center gap-2">
-                  <span className="w-24 shrink-0 truncate text-xs text-slate-600">
-                    {subject.name}
-                  </span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(subject.count / maxSubjectCount) * 100}%`,
-                        backgroundColor: subject.color,
-                      }}
-                    />
+              {subjectBreakdown.length === 0 ? (
+                <p className="py-2 text-xs text-slate-400">No documents yet.</p>
+              ) : (
+                subjectBreakdown.map((subject) => (
+                  <div key={subject.name} className="flex items-center gap-2">
+                    <span className="w-24 shrink-0 truncate text-xs text-slate-600">
+                      {subject.name}
+                    </span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${maxSubjectCount > 0 ? (subject.count / maxSubjectCount) * 100 : 0}%`,
+                          backgroundColor: subject.color,
+                        }}
+                      />
+                    </div>
+                    <span className="w-4 shrink-0 text-right text-xs text-slate-500">
+                      {subject.count}
+                    </span>
                   </div>
-                  <span className="w-4 shrink-0 text-right text-xs text-slate-500">
-                    {subject.count}
-                  </span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -218,10 +266,12 @@ export default function DashboardPage() {
               </span>
             </div>
             <span className="text-3xl font-semibold text-slate-900">
-              {mockStats.streakDays}
+              {stats.streakDays}
               <span className="ml-1 text-base font-normal text-slate-400">days</span>
             </span>
-            <p className="text-sm text-slate-500">Keep it going — review today!</p>
+            <p className="text-sm text-slate-500">
+              {stats.streakDays > 0 ? 'Keep it going – review today!' : 'Start your streak today!'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -232,7 +282,7 @@ export default function DashboardPage() {
           <CardTitle>Due Today</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {mockDueToday.length === 0 ? (
+          {dueTodayList.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-5 py-12 text-center">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                 <Inbox className="h-6 w-6" aria-hidden="true" />
@@ -244,7 +294,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {mockDueToday.map((doc) => (
+              {dueTodayList.map((doc) => (
                 <li
                   key={doc.id}
                   className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
@@ -279,7 +329,7 @@ export default function DashboardPage() {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => router.push(`/review/${doc.id}`)}
+                      onClick={() => router.push(`/documents/${doc.id}`)}
                     >
                       Start review
                     </Button>
@@ -297,7 +347,7 @@ export default function DashboardPage() {
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {mockRecentActivity.length === 0 ? (
+          {recentActivity.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-5 py-12 text-center">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                 <BookOpenCheck className="h-6 w-6" aria-hidden="true" />
@@ -309,7 +359,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {mockRecentActivity.slice(0, 5).map((entry) => (
+              {recentActivity.slice(0, 5).map((entry) => (
                 <li
                   key={`${entry.id}-${entry.reviewedAt}`}
                   className="flex items-center justify-between gap-3 px-5 py-3"
