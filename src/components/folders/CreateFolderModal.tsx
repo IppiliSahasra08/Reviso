@@ -94,15 +94,15 @@ export function CreateFolderModal({
     async function loadFolders() {
       const { data } = await (supabase
         .from('folders') as any)
-        .select('id, title, parent_id')
+        .select('id, name, parent_id')
         .eq('subject_id', effectiveSubjectId)
-        .order('title', { ascending: true })
+        .order('name', { ascending: true })
 
       if (!cancelled && data) {
         setParentOptions(
           data.map((f: any) => ({
             id: f.id,
-            name: f.title,
+            name: f.name,
             parent_id: f.parent_id,
             documentCount: 0,
           }))
@@ -147,9 +147,9 @@ export function CreateFolderModal({
         user_id: user.id,
         subject_id: effectiveSubjectId,
         parent_id: parentId || null,
-        title: trimmedName,
+        name: trimmedName,
       })
-      .select('id, title, parent_id')
+      .select('id, name, parent_id')
       .single()
 
     setSaving(false)
@@ -159,7 +159,7 @@ export function CreateFolderModal({
       return
     }
 
-    onCreated?.({ id: data.id, title: data.title, parent_id: data.parent_id })
+    onCreated?.({ id: data.id, title: data.name, parent_id: data.parent_id })
     onClose()
   }
 

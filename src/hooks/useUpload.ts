@@ -5,7 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 import type { DocumentInsert } from '@/types/database'
 
 export const STORAGE_BUCKET = 'documents'
-export const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024 // 50MB
+export const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024 // 50MB
+export const MAX_PPT_SIZE_BYTES = 100 * 1024 * 1024 // 100MB
+/** @deprecated kept for backwards compatibility with any existing imports */
+export const MAX_FILE_SIZE_BYTES = MAX_PDF_SIZE_BYTES
 
 export type UploadStatus =
   | 'idle'
@@ -32,22 +35,39 @@ export function detectFileType(file: File): 'pdf' | 'ppt' | 'pptx' {
 }
 
 /**
- * Validates a file for PDF-only, size-capped uploads.
+ * Validates a file for PDF, PPT, or PPTX uploads, with a larger size cap
+ * for PPT/PPTX (they tend to run bigger due to embedded media).
  * Returns an error message, or null if the file is valid.
  */
 export function validateFile(file: File): string | null {
-  const isPdf =
-    file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+  const type = detectFileType(file)
 
-  if (!isPdf) {
-    return 'Only PDF files are supported.'
+  const isKnownType =
+    type === 'pdf' ||
+    file.type === 'application/vnd.ms-powerpoint' ||
+    file.type ===
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    file.name.toLowerCase().endsWith('.ppt') ||
+    file.name.toLowerCase().endsWith('.pptx')
+
+  if (!isKnownType) {
+    return 'Only PDF, PPT, or PPTX files are supported.'
   }
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    return 'File is too large. Maximum size is 50MB.'
-  }
+
   if (file.size === 0) {
     return 'This file appears to be empty.'
   }
+
+  if (type === 'pdf') {
+    if (file.size > MAX_PDF_SIZE_BYTES) {
+      return 'File is too large. Maximum size is 50MB for PDFs.'
+    }
+  } else {
+    if (file.size > MAX_PPT_SIZE_BYTES) {
+      return 'File is too large. Maximum size is 100MB for PPT/PPTX.'
+    }
+  }
+
   return null
 }
 
@@ -78,13 +98,20 @@ async function getPageCount(file: File): Promise<number> {
 function uploadWithProgress(
   signedUrl: string,
   file: File,
+  fileType: 'pdf' | 'ppt' | 'pptx',
   onProgress: (percent: number) => void,
   registerAbort: (abort: () => void) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('PUT', signedUrl)
-    xhr.setRequestHeader('Content-Type', file.type || 'application/pdf')
+    const fallbackContentType =
+      fileType === 'pdf'
+        ? 'application/pdf'
+        : fileType === 'pptx'
+          ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+          : 'application/vnd.ms-powerpoint'
+    xhr.setRequestHeader('Content-Type', file.type || fallbackContentType)
     xhr.setRequestHeader('x-upsert', 'false')
 
     registerAbort(() => xhr.abort())
@@ -153,6 +180,7 @@ export function useUpload() {
         setStatus('uploading')
 
         const path = `${user.id}/${crypto.randomUUID()}-${sanitizeFilename(file.name)}`
+        const fileType = detectFileType(file)
 
         // 1. Get a signed upload URL (needed to track progress via XHR).
         const { data: signedData, error: signedError } = await supabase.storage
@@ -164,12 +192,12 @@ export function useUpload() {
         }
 
         // 2. Upload the raw bytes with real progress reporting.
-        await uploadWithProgress(signedData.signedUrl, file, setProgress, (abort) => {
+        await uploadWithProgress(signedData.signedUrl, file, fileType, setProgress, (abort) => {
           abortRef.current = abort
         })
 
-        // 3. Best-effort page count (non-blocking if it fails).
-        const pageCount = await getPageCount(file)
+        // 3. Best-effort page count for PDFs only (non-blocking if it fails).
+        const pageCount = fileType === 'pdf' ? await getPageCount(file) : 0
 
         setStatus('saving')
 
@@ -178,8 +206,8 @@ export function useUpload() {
           user_id: user.id,
           subject_id: subjectId,
           folder_id: folderId || null,
-          title: title.trim() || file.name.replace(/\.pdf$/i, ''),
-          file_type: detectFileType(file),
+          title: title.trim() || file.name.replace(/\.(pdf|ppt|pptx)$/i, ''),
+          file_type: fileType,
           file_url: path,
           file_size: file.size,
           page_count: pageCount,

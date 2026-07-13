@@ -169,7 +169,7 @@ export function FolderFileGrid({
         <DocumentCard
           key={doc.id}
           document={cards[i]}
-          onOpen={() => router.push(`/review/${doc.id}`)}
+          onOpen={() => router.push(`/documents/${doc.id}`)}
           onDelete={() => handleDelete(doc.id)}
         />
       ))}

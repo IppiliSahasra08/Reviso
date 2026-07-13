@@ -41,7 +41,7 @@ export interface Database {
           user_id: string
           subject_id: string
           parent_id: string | null
-          title: string
+          name: string
           created_at: string
           updated_at: string
         }
@@ -50,7 +50,7 @@ export interface Database {
           user_id: string
           subject_id: string
           parent_id?: string | null
-          title: string
+          name: string
           created_at?: string
           updated_at?: string
         }
@@ -59,7 +59,7 @@ export interface Database {
           user_id?: string
           subject_id?: string
           parent_id?: string | null
-          title?: string
+          name?: string
           created_at?: string
           updated_at?: string
         }

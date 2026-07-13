@@ -23,7 +23,7 @@ export function buildFolderTree(
 ): FolderNode[] {
     const nodes: FolderNode[] = folders.map((f) => ({
         id: f.id,
-        name: f.title, // DB uses 'title', UI components expect 'name'
+        name: f.name,
         parent_id: f.parent_id,
         documentCount: ownFileCounts[f.id] || 0,
     }))

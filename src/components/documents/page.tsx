@@ -102,7 +102,7 @@ export default function SubjectFoldersPage() {
       ...prev,
       {
         id: folder.id,
-        title: folder.title,
+        name: folder.title,
         parent_id: folder.parent_id,
         subject_id: subjectId,
         user_id: '', // not needed for tree rendering; refetch will fill it in accurately
