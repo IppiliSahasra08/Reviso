@@ -248,7 +248,7 @@ export default function FoldersPage() {
                 <DocumentCard
                   key={card.id}
                   document={card}
-                  onOpen={() => router.push(`/review/${card.id}`)}
+                  onOpen={() => router.push(`/documents/${card.id}`)}
                   onDelete={() => handleDeleteDocument(card.id)}
                 />
               ))}
