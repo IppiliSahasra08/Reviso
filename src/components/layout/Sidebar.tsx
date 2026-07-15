@@ -40,7 +40,7 @@ export function Sidebar({ isOpen, onClose, user }: SidebarProps) {
       {/* Mobile backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 md:hidden"
+          className="fixed inset-0 z-40 bg-ink-900/40 md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -48,7 +48,7 @@ export function Sidebar({ isOpen, onClose, user }: SidebarProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out',
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-surface transition-transform duration-200 ease-in-out',
           'md:static md:z-auto md:w-64 md:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -56,16 +56,16 @@ export function Sidebar({ isOpen, onClose, user }: SidebarProps) {
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center justify-between px-5">
           <Link href="/" className="flex items-center gap-2" onClick={onClose}>
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <BrainCircuit className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="text-lg font-semibold text-slate-900">Recall</span>
+            <span className="font-serif text-lg font-semibold text-foreground">Reviso</span>
           </Link>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 md:hidden"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-muted hover:text-foreground md:hidden"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -84,16 +84,16 @@ export function Sidebar({ isOpen, onClose, user }: SidebarProps) {
                 onClick={onClose}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-teal-50 text-teal-700'
+                    : 'text-ink-700 hover:bg-surface-muted hover:text-foreground'
                 )}
               >
                 <item.icon
                   className={cn(
                     'h-5 w-5 shrink-0',
-                    isActive ? 'text-indigo-600' : 'text-slate-400'
+                    isActive ? 'text-primary' : 'text-muted-foreground'
                   )}
                   aria-hidden="true"
                 />
@@ -104,7 +104,7 @@ export function Sidebar({ isOpen, onClose, user }: SidebarProps) {
         </nav>
 
         {/* User menu */}
-        <div className="shrink-0 border-t border-slate-100 p-3">
+        <div className="shrink-0 border-t border-border p-3">
           <UserMenu name={user.name} email={user.email} avatarUrl={user.avatarUrl} />
         </div>
       </aside>

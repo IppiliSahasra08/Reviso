@@ -29,17 +29,17 @@ export function Header({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-surface px-4 sm:px-6">
       <button
         type="button"
         onClick={onMenuClick}
         aria-label="Open menu"
-        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 md:hidden"
+        className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-muted hover:text-foreground md:hidden"
       >
         <Menu className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      <h1 className="shrink-0 text-lg font-semibold text-slate-900">{title}</h1>
+      <h1 className="shrink-0 font-serif text-lg font-semibold text-foreground">{title}</h1>
 
       <form onSubmit={handleSubmit} className="ml-2 hidden flex-1 max-w-md sm:block">
         <label htmlFor="global-search" className="sr-only">
@@ -47,7 +47,7 @@ export function Header({
         </label>
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <input
@@ -56,7 +56,7 @@ export function Header({
             placeholder="Search documents, subjects…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="h-9 w-full rounded-md border border-border bg-surface-muted pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-transparent focus:bg-surface focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </form>
@@ -66,13 +66,13 @@ export function Header({
           type="button"
           onClick={onNotificationsClick}
           aria-label="Notifications"
-          className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="relative rounded-full p-2 text-muted-foreground hover:bg-surface-muted hover:text-foreground"
         >
           <Bell className="h-5 w-5" aria-hidden="true" />
           {hasUnreadNotifications && (
             <span
               className={cn(
-                'absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white'
+                'absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger ring-2 ring-surface'
               )}
               aria-hidden="true"
             />

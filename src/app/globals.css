@@ -1,26 +1,185 @@
 @import "tailwindcss";
 
+/*
+ * "Modern Indian Academia" design tokens.
+ * Light values live on :root; dark values override the same custom
+ * properties inside the prefers-color-scheme media query below, so every
+ * @theme alias automatically repaints for either mode. No dark-mode toggle
+ * exists in the app yet, so this follows the OS/browser preference, same
+ * pattern the previous scaffold used.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Ivory / parchment neutrals (light canvas) */
+  --color-ivory-50: #fefcf8;
+  --color-ivory-100: #fbf6ec;
+  --color-ivory-200: #f5eedd;
+  --color-ivory-300: #ebe0c9;
+  --color-ivory-400: #d9cba8;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Ink (foreground on ivory) */
+  --color-ink-500: #6b6154;
+  --color-ink-700: #453d33;
+  --color-ink-900: #26211b;
+
+  /* Peacock teal (primary) */
+  --color-teal-50: #eaf6f5;
+  --color-teal-100: #d0ece9;
+  --color-teal-300: #7ec3bc;
+  --color-teal-500: #1c7a72;
+  --color-teal-600: #146059;
+  --color-teal-700: #0e4a45;
+  --color-teal-900: #0a312e;
+
+  /* Lotus pink (status / soft highlight) */
+  --color-lotus-50: #fceef1;
+  --color-lotus-100: #f8dce3;
+  --color-lotus-300: #eda9bb;
+  --color-lotus-500: #d96b8a;
+  --color-lotus-600: #be5372;
+
+  /* Marigold gold (reward / alert) */
+  --color-marigold-50: #fdf3e2;
+  --color-marigold-100: #fae5be;
+  --color-marigold-300: #f0c365;
+  --color-marigold-500: #de9a2c;
+  --color-marigold-600: #b87c1e;
+
+  /* Functional, kept distinct from the brand triad */
+  --color-success-500: #4b8b6f;
+  --color-danger-500: #c1543f;
+
+  /* Semantic aliases consumed by components */
+  --color-background: var(--color-ivory-100);
+  --color-surface: #ffffff;
+  --color-surface-muted: var(--color-ivory-200);
+  --color-border: var(--color-ivory-300);
+  --color-foreground: var(--color-ink-900);
+  --color-muted-foreground: var(--color-ink-500);
+
+  --color-primary: var(--color-teal-500);
+  --color-primary-hover: var(--color-teal-600);
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: var(--color-lotus-500);
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: var(--color-marigold-500);
+  --color-accent-foreground: var(--color-ink-900);
+
+  --color-ring: var(--color-teal-500);
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.5rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-background: #171310;
+    --color-surface: #1e1912;
+    --color-surface-muted: #241e16;
+    --color-border: #362e22;
+    --color-foreground: #ede6d8;
+    --color-muted-foreground: #a89c87;
+
+    --color-teal-50: #16302d;
+    --color-teal-100: #1b3d38;
+    --color-teal-300: #3d8c81;
+    --color-teal-500: #4fbfb2;
+    --color-teal-600: #6bcec2;
+    --color-teal-700: #8fdad1;
+    --color-teal-900: #cdf0ea;
+
+    --color-lotus-50: #2f1b22;
+    --color-lotus-100: #3c2028;
+    --color-lotus-300: #c47f96;
+    --color-lotus-500: #e599b0;
+    --color-lotus-600: #edb4c5;
+
+    --color-marigold-50: #2c2211;
+    --color-marigold-100: #3a2c14;
+    --color-marigold-300: #c99a49;
+    --color-marigold-500: #e6b457;
+    --color-marigold-600: #edc57c;
+
+    --color-success-500: #7bb79a;
+    --color-danger-500: #e08670;
+
+    --color-primary: var(--color-teal-500);
+    --color-primary-hover: var(--color-teal-600);
+    --color-primary-foreground: #14201e;
+
+    --color-secondary: var(--color-lotus-500);
+    --color-secondary-foreground: #2a1620;
+
+    --color-accent: var(--color-marigold-500);
+    --color-accent-foreground: #241a08;
+
+    --color-ring: var(--color-teal-500);
   }
 }
 
+@theme inline {
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-border: var(--color-border);
+  --color-foreground: var(--color-foreground);
+  --color-muted-foreground: var(--color-muted-foreground);
+
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-accent: var(--color-accent);
+  --color-accent-foreground: var(--color-accent-foreground);
+  --color-success: var(--color-success-500);
+  --color-danger: var(--color-danger-500);
+  --color-ring: var(--color-ring);
+
+  --color-ivory-50: var(--color-ivory-50);
+  --color-ivory-100: var(--color-ivory-100);
+  --color-ivory-200: var(--color-ivory-200);
+  --color-ivory-300: var(--color-ivory-300);
+  --color-ivory-400: var(--color-ivory-400);
+
+  --color-ink-500: var(--color-ink-500);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-900: var(--color-ink-900);
+
+  --color-teal-50: var(--color-teal-50);
+  --color-teal-100: var(--color-teal-100);
+  --color-teal-300: var(--color-teal-300);
+  --color-teal-500: var(--color-teal-500);
+  --color-teal-600: var(--color-teal-600);
+  --color-teal-700: var(--color-teal-700);
+  --color-teal-900: var(--color-teal-900);
+
+  --color-lotus-50: var(--color-lotus-50);
+  --color-lotus-100: var(--color-lotus-100);
+  --color-lotus-300: var(--color-lotus-300);
+  --color-lotus-500: var(--color-lotus-500);
+  --color-lotus-600: var(--color-lotus-600);
+
+  --color-marigold-50: var(--color-marigold-50);
+  --color-marigold-100: var(--color-marigold-100);
+  --color-marigold-300: var(--color-marigold-300);
+  --color-marigold-500: var(--color-marigold-500);
+  --color-marigold-600: var(--color-marigold-600);
+
+  --font-serif: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-ibm-plex-mono);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
 }

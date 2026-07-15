@@ -17,8 +17,8 @@ export default function DashboardLayout({
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-slate-50">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+            <div className="flex min-h-screen items-center justify-center bg-background">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-border border-t-primary" />
             </div>
         )
     }
@@ -41,7 +41,7 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-50">
+        <div className="flex h-screen overflow-hidden bg-background">
             {/* Sidebar navigation */}
             <Sidebar
                 isOpen={sidebarOpen}
